@@ -1,3 +1,71 @@
 @use "./variables.scss" as *;
 
-// put your custom CSS here!
+// ─── Hero banner on index page only ────────────────────────────────────────
+.page[data-slug="index"] {
+  #quartz-body .center > article {
+    > h1:first-child {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--tertiary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.25rem;
+    }
+
+    > p:first-of-type {
+      font-size: 1.15rem;
+      color: var(--gray);
+      max-width: 600px;
+      line-height: 1.6;
+    }
+  }
+}
+
+// ─── Hide footer links (keep minimal) ──────────────────────────────────────
+footer ul {
+  display: none;
+}
+
+footer p {
+  font-size: 0.75rem;
+  color: var(--gray);
+  opacity: 0.5;
+}
+
+// ─── Nicer article typography ───────────────────────────────────────────────
+article {
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    border-bottom: 1px solid var(--lightgray);
+    padding-bottom: 0.3rem;
+  }
+
+  // Subtle link underline
+  a {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+
+// ─── Code blocks ────────────────────────────────────────────────────────────
+pre {
+  border-radius: 8px;
+  border: 1px solid var(--lightgray);
+}
+
+// ─── Callout polish ─────────────────────────────────────────────────────────
+.callout {
+  border-radius: 8px;
+  border-left-width: 3px;
+}
+
+// ─── Graph view ─────────────────────────────────────────────────────────────
+#graph-container {
+  border-radius: 8px;
+  overflow: hidden;
+}
