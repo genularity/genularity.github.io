@@ -249,7 +249,7 @@ plugins:
       priority: 100
       display: all
   - source: github:quartz-community/stacked-pages
-    enabled: false
+    enabled: true
     layout:
       position: afterBody
       priority: 50
