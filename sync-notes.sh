@@ -6,9 +6,10 @@
 # frontmatter (see /home/node/obsidian/Notes/Home.md) is synced to
 # content/index.md instead of its own filename. Everything in that note is
 # hand-editable in Obsidian EXCEPT the region between the
-# <!-- QUARTZ:NOTE-LIST-START --> / <!-- QUARTZ:NOTE-LIST-END --> markers and
-# the <!-- QUARTZ:NOTE-COUNT --> placeholder, which are regenerated below from
-# the actual published set every run.
+# <!-- QUARTZ:NOTE-LIST-START --> / <!-- QUARTZ:NOTE-LIST-END --> markers,
+# which is mechanically regenerated below from the actual published set every
+# run. The themes paragraph (QUARTZ:THEMES-START/END) is prose, not
+# mechanically generated — see the staleness check further down.
 #
 # Usage: ./sync-notes.sh
 
@@ -49,11 +50,20 @@ fi
 
 # --- Regenerate homepage note list from the CURRENT published set only ---
 # Reads content/*.md (post-sync, i.e. ground truth of what's actually live)
-# and rewrites the region between the NOTE-LIST markers in index.md, plus the
-# NOTE-COUNT placeholder. Everything else in index.md is left untouched —
-# it's normal hand-editable Obsidian content.
+# and rewrites the region between the NOTE-LIST markers in index.md.
+# Everything else in index.md is left untouched — it's normal hand-editable
+# Obsidian content.
+#
+# Also checks the "themes" paragraph (between QUARTZ:THEMES-START/END) for
+# staleness: that paragraph is prose written by an agent reading the actual
+# published notes, NOT mechanically generated — a script can't judge what's
+# thematically relevant. Instead we hash the sorted set of published titles
+# and compare it against `themes-hash` in the note's frontmatter. If they
+# differ, the published set has changed since the paragraph was last written
+# and it needs a human/agent rewrite — we warn loudly rather than silently
+# leaving stale prose live.
 python3 - "$CONTENT" <<'PYEOF'
-import sys, re, glob, os
+import sys, re, glob, os, hashlib
 
 content_dir = sys.argv[1]
 index_path = os.path.join(content_dir, "index.md")
@@ -92,8 +102,6 @@ list_md = "\n".join("- [[%s]]%s" % (title, (" — " + summary) if summary else "
 with open(index_path, "r", encoding="utf-8") as f:
     idx = f.read()
 
-idx = idx.replace("<!-- QUARTZ:NOTE-COUNT -->", str(len(entries)))
-
 new_idx, n = re.subn(
     r"<!-- QUARTZ:NOTE-LIST-START -->.*?<!-- QUARTZ:NOTE-LIST-END -->",
     "<!-- QUARTZ:NOTE-LIST-START -->\n" + list_md + "\n<!-- QUARTZ:NOTE-LIST-END -->",
@@ -110,6 +118,21 @@ with open(index_path, "w", encoding="utf-8") as f:
     f.write(idx)
 
 print(f"Homepage note list regenerated: {len(entries)} note(s) — {', '.join(t for t, _ in entries)}")
+
+# Themes staleness check
+current_hash = hashlib.sha256("|".join(sorted(t for t, _ in entries)).encode()).hexdigest()[:12]
+fm_match = re.match(r"^---\n(.*?)\n---\n", idx, re.DOTALL)
+stored_hash = None
+if fm_match:
+    h_match = re.search(r'^themes-hash:\s*"?([a-f0-9]*)"?\s*$', fm_match.group(1), re.MULTILINE)
+    if h_match:
+        stored_hash = h_match.group(1)
+
+if stored_hash != current_hash:
+    print(f"WARNING: homepage themes paragraph is STALE (hash {stored_hash!r} != current {current_hash!r}).")
+    print(f"  The published note set changed since the themes paragraph was last written by hand/agent.")
+    print(f"  Rewrite the paragraph between QUARTZ:THEMES-START/END in {os.path.relpath(index_path)}'s vault source")
+    print(f"  (/home/node/obsidian/Notes/Home.md) to reflect the current notes, then set themes-hash: \"{current_hash}\"")
 PYEOF
 
 # --- Strip dead cross-references before they ever reach the live site ---
