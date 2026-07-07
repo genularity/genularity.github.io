@@ -1,11 +1,13 @@
 ---
-title: Home
+title: genularity
 publish: true
 quartz-homepage: true
 themes-hash: "edf24a35a85f"
 ---
 
 # Kent's Notes
+
+*genularity — general singularity: the point where AI agent tooling, memory, and infrastructure converge into something that just works.*
 
 I'm an AI Architect based in Sweden. These notes are my thinking-out-loud — patterns I've found useful, ideas worth sharing, things I want to remember.
 

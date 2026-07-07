@@ -38,6 +38,15 @@ body {
 // ─────────────────────────────────────────────────────────────────────────────
 // HERO — index page only
 // ─────────────────────────────────────────────────────────────────────────────
+
+// The frontmatter title ("genularity") renders as its own h1.article-title in
+// the page header, above the note body's own "# Kent's Notes" h1 — that's a
+// duplicated-looking title stack. Hide the frontmatter title bar on the index
+// page only; the note body heading below is the real, styled hero title.
+.page[data-slug="index"] #quartz-body .center > .page-header {
+  display: none;
+}
+
 .page[data-slug="index"] #quartz-body .center > article {
   position: relative;
 
@@ -64,8 +73,8 @@ body {
     animation: singularity-pulse 10s ease-in-out infinite;
   }
 
-  // Gradient hero title
-  > h1:first-child {
+  // Gradient hero title (actual DOM: article > .markdown-preview-view > h1)
+  .markdown-preview-view > h1:first-child {
     font-size: clamp(2.2rem, 5vw, 3.4rem);
     font-weight: 800;
     letter-spacing: -0.04em;
@@ -78,10 +87,23 @@ body {
     padding-bottom: 0;
     border-bottom: none !important;
     position: relative;
+
+    // Hide the auto-generated anchor-link icon quartz adds to every heading
+    // — looks out of place on a gradient hero title.
+    .internal.internal-link {
+      display: none;
+    }
   }
 
-  // Subtitle paragraph
-  > p:first-of-type {
+  // genularity tagline — first italic paragraph right under the hero title
+  .markdown-preview-view > p:first-of-type em {
+    font-size: 0.95rem;
+    color: var(--tertiary);
+    letter-spacing: 0.01em;
+  }
+
+  // Subtitle paragraph (the "I'm an AI Architect..." line, second paragraph)
+  .markdown-preview-view > p:nth-of-type(2) {
     font-size: 1.1rem;
     color: var(--gray);
     max-width: 560px;
