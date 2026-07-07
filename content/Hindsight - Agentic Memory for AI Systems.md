@@ -28,10 +28,7 @@ key_concepts:
   - Memory consolidation
   - Cross-agent memory sharing
 related:
-  - "[[Memory Systems for AI Agents]]"
-  - "[[RAG Architecture Patterns]]"
-  - "[[Context Engineering - The New Prompt Engineering]]"
-  - "[[Context Window Limits - Strategies for Long Documents]]"
+  - "[[OMP Configuration - Generic Reference]]"
 status: draft
 publish: true
 ---
@@ -45,7 +42,7 @@ publish: true
 
 Every AI agent starts fresh. Context windows reset. Sessions end. The user explains themselves again and again.
 
-This is the [[Memory Systems for AI Agents|memory problem]] at its most frustrating — not a technical limitation, just a missing architectural layer.
+This is the memory problem at its most frustrating — not a technical limitation, just a missing architectural layer.
 
 Hindsight is that layer.
 
@@ -181,7 +178,4 @@ Hindsight is not tied to any specific agent framework. It's a plain HTTP API.
 
 ## Related
 
-- [[Memory Systems for AI Agents]] — the theory behind the four memory types
-- [[RAG Architecture Patterns]] — how retrieval works under the hood
-- [[Context Engineering - The New Prompt Engineering]] — where memory fits in the broader picture
-- [[Context Window Limits - Strategies for Long Documents]] — managing what gets recalled into context
+- [[OMP Configuration - Generic Reference]] — the agent harness that consumes this memory layer: model role routing, subagent isolation, and the `hindsight` backend config block

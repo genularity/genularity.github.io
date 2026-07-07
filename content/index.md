@@ -13,15 +13,11 @@ I'm an AI Architect based in Sweden. These notes are my thinking-out-loud — pa
 
 ## Start Here
 
-> [!example] New to the site?
-> These five notes form a connected series on how modern AI systems manage and use information.
+> [!example] Currently published
+> Two notes are live right now — both grounded in real implementation work rather than generic explainers.
 
-- [[Context Engineering - The New Prompt Engineering]] — why context beats prompts
-- [[RAG Architecture Patterns]] — the four retrieval patterns and when to use each
-- [[Memory Systems for AI Agents]] — giving agents a memory that survives sessions
-- [[Context Window Limits - Strategies for Long Documents]] — working with long content
-- [[Prompt Engineering is Dead - Long Live Context Engineering]] — the opinionated take
-- [[Hindsight - Agentic Memory for AI Systems]] — memory as a service for any agent
+- [[Hindsight - Agentic Memory for AI Systems]] — memory as a service for any agent: retain/recall API design, mental models, multi-bank architecture, reranker latency on edge hardware, and the doc-generation loop this site runs on
+- [[OMP Configuration - Generic Reference]] — a fully-annotated reference config for Oh My Pi (OMP), covering model role routing, memory backend wiring, subagent isolation, and every setting's rationale
 
 ---
 

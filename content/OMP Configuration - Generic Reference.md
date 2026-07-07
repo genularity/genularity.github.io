@@ -3,8 +3,13 @@ tags: [omp, configuration, reference, generic, public]
 created: 2026-07-06
 status: public-safe
 publish: true
+related:
+  - "[[Hindsight - Agentic Memory for AI Systems]]"
 ---
 # OMP Configuration — Generic Reference
+
+> [!info] Related
+> This config uses [[Hindsight - Agentic Memory for AI Systems]] as its memory backend — see the `hindsight` block below for how the agent harness is wired to it.
 
 ---
 
