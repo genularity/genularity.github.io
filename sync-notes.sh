@@ -1,21 +1,38 @@
 #!/bin/bash
 # sync-notes.sh — copy publish:true notes from Obsidian vault to Quartz content/,
 # then regenerate the homepage note list from whatever actually ended up published.
+#
+# Homepage is vault-native: the vault note with `quartz-homepage: true` in its
+# frontmatter (see /home/node/obsidian/Notes/Home.md) is synced to
+# content/index.md instead of its own filename. Everything in that note is
+# hand-editable in Obsidian EXCEPT the region between the
+# <!-- QUARTZ:NOTE-LIST-START --> / <!-- QUARTZ:NOTE-LIST-END --> markers and
+# the <!-- QUARTZ:NOTE-COUNT --> placeholder, which are regenerated below from
+# the actual published set every run.
+#
 # Usage: ./sync-notes.sh
 
 VAULT="/home/node/obsidian/Notes"
 CONTENT="$(dirname "$0")/content"
 
-# Clear existing content (keep index.md — it's regenerated below, not synced from vault)
-find "$CONTENT" -name "*.md" ! -name "index.md" -delete 2>/dev/null
+# Clear existing content entirely — index.md is now sourced from the vault
+# homepage note (via quartz-homepage: true) like everything else, so there is
+# no longer a standing exception to preserve here.
+find "$CONTENT" -name "*.md" -delete 2>/dev/null
 
 SYNCED=0
 SKIPPED=0
+HOMEPAGE_SRC=""
 
 while IFS= read -r -d '' file; do
   if head -50 "$file" | grep -qE "^publish:\s*true"; then
-    rel="${file#$VAULT/}"
-    dest="$CONTENT/$rel"
+    if head -50 "$file" | grep -qE "^quartz-homepage:\s*true"; then
+      HOMEPAGE_SRC="$file"
+      dest="$CONTENT/index.md"
+    else
+      rel="${file#$VAULT/}"
+      dest="$CONTENT/$rel"
+    fi
     mkdir -p "$(dirname "$dest")"
     cp "$file" "$dest"
     ((SYNCED++))
@@ -26,16 +43,23 @@ done < <(find "$VAULT" -name "*.md" ! -path "*/.obsidian/*" ! -path "*/copilot/*
 
 echo "Synced: $SYNCED notes | Skipped: $SKIPPED notes"
 
+if [ -z "$HOMEPAGE_SRC" ]; then
+  echo "WARNING: no vault note with 'quartz-homepage: true' found — content/index.md was not created this run."
+fi
+
 # --- Regenerate homepage note list from the CURRENT published set only ---
-# This block reads content/*.md (post-sync, i.e. the ground truth of what's
-# actually live) and rebuilds the "Start Here" list in index.md. It never
-# reads a hand-maintained list — dead links from deleted notes can't
-# accumulate here because the list is rebuilt from disk every run.
+# Reads content/*.md (post-sync, i.e. ground truth of what's actually live)
+# and rewrites the region between the NOTE-LIST markers in index.md, plus the
+# NOTE-COUNT placeholder. Everything else in index.md is left untouched —
+# it's normal hand-editable Obsidian content.
 python3 - "$CONTENT" <<'PYEOF'
 import sys, re, glob, os
 
 content_dir = sys.argv[1]
 index_path = os.path.join(content_dir, "index.md")
+
+if not os.path.exists(index_path):
+    sys.exit(0)
 
 entries = []
 for path in sorted(glob.glob(os.path.join(content_dir, "*.md"))):
@@ -59,73 +83,101 @@ for path in sorted(glob.glob(os.path.join(content_dir, "*.md"))):
             if s_inline:
                 summary = s_inline.group(1).strip()
     if summary:
-        # trim to a single clause for the homepage list
         summary = summary.split(". ")[0].rstrip(".")
     entries.append((title, summary))
 
-lines = []
 list_md = "\n".join("- [[%s]]%s" % (title, (" — " + summary) if summary else "")
                      for title, summary in entries)
 
-if not os.path.exists(index_path):
-    body = f"""---
-title: Home
-publish: true
----
+with open(index_path, "r", encoding="utf-8") as f:
+    idx = f.read()
 
-# Kent's Notes
+idx = idx.replace("<!-- QUARTZ:NOTE-COUNT -->", str(len(entries)))
 
-Writing on AI architecture, agentic systems, and building things that actually work in production.
+new_idx, n = re.subn(
+    r"<!-- QUARTZ:NOTE-LIST-START -->.*?<!-- QUARTZ:NOTE-LIST-END -->",
+    "<!-- QUARTZ:NOTE-LIST-START -->\n" + list_md + "\n<!-- QUARTZ:NOTE-LIST-END -->",
+    idx,
+    flags=re.DOTALL,
+)
 
-I'm an AI Architect based in Sweden. These notes are my thinking-out-loud — patterns I've found useful, ideas worth sharing, things I want to remember.
-
----
-
-## Start Here
-
-> [!example] Currently published
-> {len(entries)} note(s) are live right now.
-
-{list_md}
-
----
-
-## Browse
-
-Use the **explorer** on the left or hit `Ctrl+K` to search. The **graph view** on the right shows how notes connect.
-
----
-
-*Updated automatically from my Obsidian vault.*
-"""
-    with open(index_path, "w", encoding="utf-8") as f:
-        f.write(body)
-    print(f"Homepage created with {len(entries)} note(s).")
+if n == 0:
+    print("WARNING: could not find QUARTZ:NOTE-LIST markers in index.md — note list left unchanged.")
 else:
-    with open(index_path, "r", encoding="utf-8") as f:
-        idx = f.read()
+    idx = new_idx
 
-    count_line = f"> {len(entries)} note(s) are live right now."
-    idx = re.sub(r"^> .*note\(s\) are live right now\.$", count_line, idx, flags=re.MULTILINE)
-    # Also normalize any hand-written variant (e.g. "Two notes are live right now...")
-    # so it doesn't drift out of sync with the actual count on future edits.
-    idx = re.sub(
-        r"^> [A-Za-z0-9]+ notes? (?:are|is) live right now.*$",
-        count_line,
-        idx,
-        flags=re.MULTILINE,
-    )
+with open(index_path, "w", encoding="utf-8") as f:
+    f.write(idx)
 
-    new_idx, n = re.subn(
-        r"(## Start Here\n\n(?:> \[!example\].*\n(?:> .*\n)*\n)?)(?:- \[\[.*\]\].*\n)+",
-        lambda m: m.group(1) + list_md + "\n",
-        idx,
-    )
-    if n == 0:
-        # Fallback: no matching block found, leave index.md untouched rather than corrupt it
-        print("WARNING: could not locate 'Start Here' note list in index.md — left unchanged.")
-    else:
-        with open(index_path, "w", encoding="utf-8") as f:
-            f.write(new_idx)
-        print(f"Homepage note list regenerated: {len(entries)} note(s) — {', '.join(t for t, _ in entries)}")
+print(f"Homepage note list regenerated: {len(entries)} note(s) — {', '.join(t for t, _ in entries)}")
+PYEOF
+
+# --- Strip dead cross-references before they ever reach the live site ---
+# For every published note, remove any related:/wikilink entry that points at
+# a note NOT in the current published set. This runs after the homepage
+# regeneration above so it also covers links inside index.md itself.
+# disableBrokenWikilinks in quartz.config.default.yaml is kept as a visual
+# fallback in case something slips past this (e.g. a link added after this
+# script last ran, before the next sync) — this step is the primary defense.
+python3 - "$CONTENT" <<'PYEOF'
+import sys, re, glob, os
+
+content_dir = sys.argv[1]
+
+# Build the set of valid link targets: every published note's title (no ext),
+# matched case-sensitively against [[Title]] and [[Title|alias]] forms.
+published_titles = set()
+for path in glob.glob(os.path.join(content_dir, "*.md")):
+    published_titles.add(os.path.splitext(os.path.basename(path))[0])
+
+WIKILINK = re.compile(r"\[\[([^\]|#]+)(\|[^\]]*)?(#[^\]]*)?\]\]")
+
+def target_is_dead(raw_target: str) -> bool:
+    return raw_target.strip() not in published_titles
+
+for path in glob.glob(os.path.join(content_dir, "*.md")):
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    original = text
+
+    fm_match = re.match(r"^(---\n)(.*?)(\n---\n)", text, re.DOTALL)
+    removed_from = []
+
+    if fm_match:
+        fm_body = fm_match.group(2)
+        # Drop related: list items that point at a non-published note.
+        def _filter_related_line(m):
+            target_match = WIKILINK.search(m.group(0))
+            if target_match and target_is_dead(target_match.group(1)):
+                removed_from.append(target_match.group(1))
+                return ""
+            return m.group(0)
+
+        new_fm_body = re.sub(r'^\s*-\s*"?\[\[[^\]]+\]\]"?\s*$\n?', _filter_related_line, fm_body, flags=re.MULTILINE)
+        if new_fm_body != fm_body:
+            text = text[:fm_match.start(2)] + new_fm_body + text[fm_match.end(2):]
+
+    # Body wikilinks: drop any pointing at a non-published note, keeping
+    # surrounding text intact (unwrap to plain text rather than delete
+    # the sentence around it).
+    body_start = fm_match.end(3) if fm_match else 0
+    head, body = text[:body_start], text[body_start:]
+
+    def _unwrap_dead_link(m):
+        target = m.group(1).strip()
+        alias = m.group(2)
+        if target_is_dead(target):
+            removed_from.append(target)
+            display = alias[1:] if alias else target
+            return display
+        return m.group(0)
+
+    new_body = WIKILINK.sub(_unwrap_dead_link, body)
+    text = head + new_body
+
+    if text != original:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        uniq = sorted(set(removed_from))
+        print(f"Stripped dead link(s) in {os.path.basename(path)}: {', '.join(uniq)}")
 PYEOF
