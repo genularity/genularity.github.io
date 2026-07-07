@@ -14,10 +14,10 @@ I'm an AI Architect based in Sweden. These notes are my thinking-out-loud — pa
 ## Start Here
 
 > [!example] Currently published
-> Two notes are live right now — both grounded in real implementation work rather than generic explainers.
+> 2 note(s) are live right now.
 
-- [[Hindsight - Agentic Memory for AI Systems]] — memory as a service for any agent: retain/recall API design, mental models, multi-bank architecture, reranker latency on edge hardware, and the doc-generation loop this site runs on
-- [[OMP Configuration - Generic Reference]] — a fully-annotated reference config for Oh My Pi (OMP), covering model role routing, memory backend wiring, subagent isolation, and every setting's rationale
+- [[Hindsight - Agentic Memory for AI Systems]] — Hindsight is a standalone memory API for AI agents — a persistent, searchable memory layer that any agent or LLM application can plug into
+- [[OMP Configuration - Generic Reference]] — A fully-annotated reference config for Oh My Pi (OMP): model role routing, memory backend wiring, subagent isolation, and the rationale behind every non-default setting
 
 ---
 

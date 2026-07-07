@@ -5,6 +5,8 @@ status: public-safe
 publish: true
 related:
   - "[[Hindsight - Agentic Memory for AI Systems]]"
+summary: >
+  A fully-annotated reference config for Oh My Pi (OMP): model role routing, memory backend wiring, subagent isolation, and the rationale behind every non-default setting.
 ---
 # OMP Configuration — Generic Reference
 
