@@ -1,5 +1,9 @@
 ---
-tags: [omp, configuration, reference, generic, public]
+tags:
+  - omp
+  - configuration
+  - reference
+  - public
 created: 2026-07-06
 status: public-safe
 publish: true

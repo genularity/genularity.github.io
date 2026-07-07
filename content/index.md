@@ -7,7 +7,7 @@ themes-hash: "edf24a35a85f"
 
 # Kent's Notes
 
-<span class="dict-entry"><strong>genularity</strong> <span class="ipa">/ˌdʒɛn.jʊˈlær.ɪ.ti/</span> · <em>noun</em>: the convergence of general-purpose AI tooling, memory, and infrastructure into a single point of leverage.</span>
+<span class="dict-entry"><strong>genularity</strong> <span class="ipa">/ˌdʒɛn.jʊˈlær.ɪ.ti/</span> · <em>noun</em>: the state in which a system's degrees of freedom approach infinity as its generality approaches everything.</span>
 
 I'm an AI Architect based in Sweden. These notes are my thinking-out-loud: patterns I've found useful, ideas worth sharing, things I want to remember.
 
