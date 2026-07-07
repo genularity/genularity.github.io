@@ -7,9 +7,9 @@ themes-hash: "edf24a35a85f"
 
 # Kent's Notes
 
-<span class="dict-entry"><strong>genularity</strong> <span class="ipa">/ˌdʒɛn.jʊˈlær.ɪ.ti/</span> · <em>noun</em> — the convergence of general-purpose AI tooling, memory, and infrastructure into a single point of leverage.</span>
+<span class="dict-entry"><strong>genularity</strong> <span class="ipa">/ˌdʒɛn.jʊˈlær.ɪ.ti/</span> · <em>noun</em>: the convergence of general-purpose AI tooling, memory, and infrastructure into a single point of leverage.</span>
 
-I'm an AI Architect based in Sweden. These notes are my thinking-out-loud — patterns I've found useful, ideas worth sharing, things I want to remember.
+I'm an AI Architect based in Sweden. These notes are my thinking-out-loud: patterns I've found useful, ideas worth sharing, things I want to remember.
 
 <!-- QUARTZ:THEMES-START -->
 Right now that means the plumbing behind AI agents that don't forget: [[Hindsight - Agentic Memory for AI Systems|persistent memory as a service]], and the [[OMP Configuration - Generic Reference|harness config]] that wires model routing, subagents, and memory backends together into something that actually runs in production.

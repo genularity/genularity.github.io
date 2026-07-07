@@ -125,12 +125,15 @@ body[data-slug="index"] #quartz-body .center > article {
   }
 
   // Subtitle paragraph (the "I'm an AI Architect..." line, second paragraph)
+  // Deliberately larger/darker than the dict-entry line above it so the two
+  // don't blend into the same muted style.
   .markdown-preview-view > p:nth-of-type(2) {
-    font-size: 1.1rem;
-    color: var(--gray);
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--darkgray);
     max-width: 560px;
     line-height: 1.65;
-    margin-top: 0.85rem;
+    margin-top: 0.9rem;
   }
 
   // Horizontal rule becomes a thin accent line
