@@ -46,6 +46,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Post-process content (regenerate homepage note list, strip dead links)
+        run: python3 scripts/postprocess-content.py content
+
       - name: Build Quartz
         run: npx quartz build
 

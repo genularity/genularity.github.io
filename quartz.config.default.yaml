@@ -7,7 +7,7 @@ configuration:
   analytics:
     provider: plausible
   locale: en-US
-  baseUrl: genularity.github.io/public
+  baseUrl: genularity.github.io
   ignorePatterns:
     - private
     - templates

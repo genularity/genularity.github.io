@@ -39,6 +39,30 @@ body {
 // HERO — index page only
 // ─────────────────────────────────────────────────────────────────────────────
 .page[data-slug="index"] #quartz-body .center > article {
+  position: relative;
+
+  // "Singularity" convergence glow behind the hero title — a soft radial
+  // vortex suggesting a point where everything converges (genularity =
+  // general + singularity). Pure CSS, no assets, subtle enough to not
+  // fight with readability.
+  &::before {
+    content: "";
+    position: absolute;
+    top: -4rem;
+    left: -6rem;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--tertiary) 22%, transparent) 0%,
+      color-mix(in srgb, var(--secondary) 12%, transparent) 35%,
+      transparent 70%
+    );
+    filter: blur(8px);
+    z-index: -1;
+    pointer-events: none;
+    animation: singularity-pulse 10s ease-in-out infinite;
+  }
 
   // Gradient hero title
   > h1:first-child {
@@ -53,6 +77,7 @@ body {
     margin-bottom: 0.5rem;
     padding-bottom: 0;
     border-bottom: none !important;
+    position: relative;
   }
 
   // Subtitle paragraph
@@ -113,6 +138,26 @@ body {
         }
       }
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGULARITY PULSE ANIMATION — used by the hero glow above
+// ─────────────────────────────────────────────────────────────────────────────
+@keyframes singularity-pulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page[data-slug="index"] #quartz-body .center > article::before {
+    animation: none;
   }
 }
 
