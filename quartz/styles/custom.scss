@@ -43,11 +43,11 @@ body {
 // the page header, above the note body's own "# Kent's Notes" h1 — that's a
 // duplicated-looking title stack. Hide the frontmatter title bar on the index
 // page only; the note body heading below is the real, styled hero title.
-.page[data-slug="index"] #quartz-body .center > .page-header {
+body[data-slug="index"] #quartz-body .center > .page-header {
   display: none;
 }
 
-.page[data-slug="index"] #quartz-body .center > article {
+body[data-slug="index"] #quartz-body .center > article {
   position: relative;
 
   // "Singularity" convergence glow behind the hero title — a soft radial
@@ -95,11 +95,33 @@ body {
     }
   }
 
-  // genularity tagline — first italic paragraph right under the hero title
-  .markdown-preview-view > p:first-of-type em {
-    font-size: 0.95rem;
-    color: var(--tertiary);
-    letter-spacing: 0.01em;
+  // genularity dictionary-style entry — subtle, small, sits right under the
+  // hero title like a real dictionary definition (word + IPA + noun tag +
+  // definition), not a second headline.
+  .markdown-preview-view > p:first-of-type .dict-entry {
+    display: block;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--gray);
+    max-width: 560px;
+    margin-top: -0.25rem;
+
+    strong {
+      color: var(--darkgray);
+      font-weight: 700;
+    }
+
+    .ipa {
+      font-family: var(--codeFont);
+      color: var(--gray);
+      opacity: 0.75;
+    }
+
+    em {
+      font-style: italic;
+      color: var(--secondary);
+      opacity: 0.85;
+    }
   }
 
   // Subtitle paragraph (the "I'm an AI Architect..." line, second paragraph)
@@ -108,7 +130,7 @@ body {
     color: var(--gray);
     max-width: 560px;
     line-height: 1.65;
-    margin-top: 0;
+    margin-top: 0.85rem;
   }
 
   // Horizontal rule becomes a thin accent line
@@ -178,7 +200,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page[data-slug="index"] #quartz-body .center > article::before {
+  body[data-slug="index"] #quartz-body .center > article::before {
     animation: none;
   }
 }
