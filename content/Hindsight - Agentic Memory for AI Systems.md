@@ -179,3 +179,5 @@ Hindsight is not tied to any specific agent framework. It's a plain HTTP API.
 ## Related
 
 - [[OMP Configuration - Generic Reference]] — the agent harness that consumes this memory layer: model role routing, subagent isolation, and the `hindsight` backend config block
+- Hindsight - Work Use Cases (Routine and Creative) — 10 routine + 20 creative ways to apply retain/recall/reflect to Kent's actual work (fault investigation, tool42 dev, project planning, research, UAT)
+- [[Hindsight - Bank Strategy for Agent Memory]] — how to decide bank boundaries vs. tags when scoping memory across users, projects, or agents

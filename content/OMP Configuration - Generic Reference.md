@@ -9,13 +9,14 @@ status: public-safe
 publish: true
 related:
   - "[[Hindsight - Agentic Memory for AI Systems]]"
+  - "[[Agentic Coding Harnesses & Terminal Runtimes]]"
 summary: >
   A fully-annotated reference config for Oh My Pi (OMP): model role routing, memory backend wiring, subagent isolation, and the rationale behind every non-default setting.
 ---
 # OMP Configuration — Generic Reference
 
 > [!info] Related
-> This config uses [[Hindsight - Agentic Memory for AI Systems]] as its memory backend — see the `hindsight` block below for how the agent harness is wired to it.
+> This config uses [[Hindsight - Agentic Memory for AI Systems]] as its memory backend — see the `hindsight` block below for how the agent harness is wired to it. For where OMP fits among other coding agents, see [[Agentic Coding Harnesses & Terminal Runtimes]].
 
 ---
 
@@ -41,6 +42,14 @@ summary: >
 # added; causes the setup wizard to re-run those steps. Do not edit manually.
 setupVersion: 1
 
+# Overrides the shell binary used by the bash tool. Uses /bin/bash instead
+# of auto-detected zsh — without this, useUserShell forces zsh's -i flag
+# with no tty, which can trip shell-framework plugins (e.g. Powerlevel10k's
+# gitstatus) that guard on interactive-shell detection and then try to start
+# an async daemon ("gitstatus failed to initialize"). Does not affect
+# interactive terminal sessions — the user's normal shell RC still loads there.
+shellPath: /bin/bash
+
 # Default reasoning depth for thinking-capable models.
 # Options: minimal | low | medium | high | xhigh | auto
 # "auto" lets a lightweight classifier decide per-turn based on complexity.
@@ -61,8 +70,11 @@ modelRoles:
   # Model used for git commit message generation. No env var override.
   commit: anthropic/claude-haiku-4.5
   # Adversarial reviewer — a different vendor/family than default. OpenRouter
-  # exposes it through the same gateway/key as everything else.
-  contrarian: deepseek/deepseek-r1
+  # exposes it through the same gateway/key as everything else. (Avoid a
+  # vendor's raw hosted DeepSeek-R1 endpoint for this role if it doesn't
+  # support tool-calling — verify per-provider before binding a tool-using
+  # agent to it.)
+  contrarian: deepseek/deepseek-v3.2
   # GPT reviewer — OpenAI via OpenRouter, for vendor diversity in the review ensemble.
   gpt-reviewer: openai/gpt-5
   # Code-specialist reviewer.
@@ -274,13 +286,7 @@ theme:
 symbolPreset: nerd
 
 # Real-time collaboration settings.
-# [WORK] Not set on home — no access to the work collab relay.
 collab:
-  # WebSocket relay URL for /collab sessions. Points at the self-hosted relay
-  # deployed for the internal agent platform on the work k8s cluster.
-  relayUrl: wss://collab.example.com
-  # Browser UI URL served by the same relay (static SPA for guest participants).
-  webUrl: https://collab.example.com
   # displayName does NOT support !cmd or env var resolution — it is read as a plain
   # string by settings.get("collab.displayName") with no resolveConfigValue pass.
   # Only auth.broker.*, models.yml apiKey/headers, and MCP env/headers support !cmd.
@@ -306,9 +312,6 @@ inspect_image:
 
 # Vault — enables the vault:// internal URL for reading and writing Obsidian
 # vault content directly.
-vault:
-  enabled: true
-
 # Developer / telemetry settings.
 dev:
   autoqa:
@@ -388,20 +391,17 @@ OPENROUTER_API_KEY=<redacted>
 
 ### Variable reference
 
-| Variable | Purpose | Notes |
-|---|---|---|
-| `PI_STREAM_IDLE_TIMEOUT_MS` | Stream idle watchdog timeout in ms | Extended-thinking responses can take >100s before first token |
-| `PI_STREAM_FIRST_EVENT_TIMEOUT_MS` | Max wait for first SSE event | Same reason |
-| `PI_CACHE_RETENTION` | `long` = long-duration prompt caching | Reduces cache miss billing |
-| `PI_SMOL_MODEL` | Overrides `modelRoles.smol` | Haiku-class small model |
-| `PI_SLOW_MODEL` | Overrides `modelRoles.slow` | Opus-class large model |
-| `PI_PLAN_MODEL` | Overrides `modelRoles.plan` | Opus-class large model |
-| `HINDSIGHT_API_URL` | Hindsight server endpoint | Work: Acme Corp cloud. Home: `homelab-host:8888` |
-| `HINDSIGHT_API_TOKEN` | Hindsight bearer token | **Secret.** Per-user. |
-| `HINDSIGHT_BANK_ID` | Memory bank namespace | `work-bank` work. `personal-bank` home. Per-user. |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP trace endpoint | Not in use — commented out on both machines. |
-| `OTEL_SERVICE_NAME` | Service name in Grafana/Tempo | Not in use — commented out on both machines. |
-| `OPENROUTER_API_KEY` | Bearer key for the OpenRouter gateway | **Secret.** One key covers every model/vendor in `models.yml` — no per-vendor credentials. |
+| Variable                           | Purpose                               | Notes                                                                                      |
+| ---------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `PI_STREAM_IDLE_TIMEOUT_MS`        | Stream idle watchdog timeout in ms    | Extended-thinking responses can take >100s before first token                              |
+| `PI_STREAM_FIRST_EVENT_TIMEOUT_MS` | Max wait for first SSE event          | Same reason                                                                                |
+| `PI_CACHE_RETENTION`               | `long` = long-duration prompt caching | Reduces cache miss billing                                                                 |
+| `PI_SMOL_MODEL`                    | Overrides `modelRoles.smol`           | Haiku-class small model                                                                    |
+| `PI_SLOW_MODEL`                    | Overrides `modelRoles.slow`           | Opus-class large model                                                                     |
+| `PI_PLAN_MODEL`                    | Overrides `modelRoles.plan`           | Opus-class large model                                                                     |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`      | OTLP trace endpoint                   | Not in use — commented out on both machines.                                               |
+| `OTEL_SERVICE_NAME`                | Service name in Grafana/Tempo         | Not in use — commented out on both machines.                                               |
+| `OPENROUTER_API_KEY`               | Bearer key for the OpenRouter gateway | **Secret.** One key covers every model/vendor in `models.yml` — no per-vendor credentials. |
 
 
 | Variable | Overrides / Purpose | Description |
@@ -447,6 +447,31 @@ OTEL_EXPORTER_OTLP_HEADERS=api_key=<key>
 
 ---
 
+## mcp.json
+
+MCP (Model Context Protocol) server configuration, user scope (`~/.omp/agent/mcp.json`).
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json",
+  "mcpServers": {
+    "image-gen": {
+      "command": "uvx",
+      "args": ["mcp-server-image-provider"],
+      "env": {
+        "PROVIDER_REGION": "us-west-2"
+      }
+    }
+  },
+  "disabledServers": ["hindsight-memory:hindsight"]
+}
+```
+
+- **`image-gen`** — stdio server for image generation/inspection, pinned to a specific provider region independent of the region used by the main chat-model gateway (`models.yml`) — the split reflects which region has the image model available, not a config mismatch. No `auth`/`oauth` block — credentials resolve through the provider's standard credential chain, not via `env` here.
+- **`disabledServers: ["hindsight-memory:hindsight"]`** — the native Hindsight MCP server is explicitly disabled; Hindsight is instead wired directly via `hindsight.*` settings in `config.yml`.
+
+---
+
 ## models.yml
 
 > **Canonical `models.yml` is identical on both machines** (except `[PERSONAL]` litellm on home).
@@ -483,8 +508,8 @@ providers:
         name: "GPT-5"
         reasoning: true
         contextWindow: 400000
-      "deepseek/deepseek-r1":
-        name: "DeepSeek R1"
+      "deepseek/deepseek-v3.2":
+        name: "DeepSeek V3.2"
         reasoning: true
         contextWindow: 128000
       "mistralai/devstral-2":
@@ -561,7 +586,7 @@ All specialist agents are documented below.
 | `pi/default` | `anthropic/claude-sonnet-5` | `config.yml modelRoles.default` |
 | `pi/slow` | `anthropic/claude-opus-4.8` | `PI_SLOW_MODEL` in `.env` |
 | `pi/smol` | `anthropic/claude-haiku-4.5` | `PI_SMOL_MODEL` in `.env` |
-| `pi/contrarian` | `deepseek/deepseek-r1` | `config.yml modelRoles.contrarian` |
+| `pi/contrarian` | `deepseek/deepseek-v3.2` | `config.yml modelRoles.contrarian` |
 | `pi/gpt-reviewer` | `openai/gpt-5` | `config.yml modelRoles.gpt-reviewer` |
 | `pi/devstral` | `mistralai/devstral-2` | `config.yml modelRoles.devstral` |
 | `pi/qwen-coder` | `qwen/qwen3-coder` | `config.yml modelRoles.qwen-coder` |
@@ -601,7 +626,7 @@ You are the architect: the lead planner and orchestrator. You decompose a comple
 For any non-trivial change, spawn all three simultaneously:
 - `code-reviewer` — Devstral 2, code-specialist, finds implementation bugs and style issues.
 - `gpt-reviewer` — GPT-5, OpenAI lineage, independent second opinion.
-- `contrarian` — DeepSeek R1, adversarial reasoning, challenges assumptions and finds hidden risks.
+- `contrarian` — DeepSeek V3.2, adversarial reasoning, challenges assumptions and finds hidden risks.
 
 ### Checkpoint gates
 
@@ -703,7 +728,7 @@ Ready to merge? Yes / No / With fixes — one-sentence reasoning.
 ```yaml
 ---
 name: contrarian
-description: Adversarial reviewer on DeepSeek R1 — stress-tests plans and changes, finds wrong assumptions, hidden risks, and simpler alternatives. Use in parallel with code-reviewer and gpt-reviewer for high-stakes changes.
+description: Adversarial reviewer on DeepSeek V3.2 — stress-tests plans and changes, finds wrong assumptions, hidden risks, and simpler alternatives. Use in parallel with code-reviewer and gpt-reviewer for high-stakes changes.
 tools: read, search, find, lsp, ast_grep
 model: pi/contrarian
 thinking: high
@@ -1166,6 +1191,14 @@ Specifically omitted, and why:
 
 Why each non-obvious setting was chosen. Source-verified against `settings-schema.ts` (oh-my-pi).
 
+### `shellPath`
+
+Unset by default — OMP auto-detects `$SHELL` and, when `useUserShell` is requested (loads the user's real shell env/aliases/rc for a tool call), forces `-i` onto zsh specifically (`needsInteractiveShellArg()` in `bash-executor.ts`). On a zsh setup with a prompt framework like Powerlevel10k, that forced `-i` flag can trip the framework's own interactivity guard (e.g. gitstatus's `-o 'interactive' || return`) and proceed into starting an async status daemon in a context with no tty, producing an initialization failure.
+
+Root cause is the zsh-specific `-i`-forcing branch always firing when `useUserShell: true`, regardless of tty presence — no narrower "skip user shell for this one call" toggle exists in `config.yml`. Bash has no equivalent `-i`-forcing logic (`needsInteractiveShellArg()` only checks for `zsh` in the basename) and no prompt-framework coupling, so pointing `shellPath` at `/bin/bash` removes the whole failure mode instead of routing around it. Set `shellPath: /bin/bash`.
+
+Trade-off: OMP's own shell tool calls that request `useUserShell` (loading the user's shell rc context — aliases, functions, rc-defined env) get bash's plain environment instead. Does **not** touch interactive terminal sessions — the user's normal shell, plugin manager, and prompt theme continue to load normally there; this setting only changes what binary `bash-executor.ts` spawns for OMP's own tool calls.
+
 ### `tools.approvalMode`
 
 Default is `yolo` (schema line 3204) — all tool tiers auto-approved. `write` requires confirmation before exec-class tools (bash, eval, browser, task, ssh); `always-ask` requires confirmation for write and exec. Set to `write`: confirmation gates before irreversible shell operations are worth the minor friction, especially combined with TTSR rules that intercept dangerous patterns and `pi-rewind` for filesystem-level undo.
@@ -1279,19 +1312,7 @@ All entries below verified against `packages/coding-agent/src/config/settings-sc
 
 ### §7.2 Hindsight Reflect Grounding Limitation (OMP Source Gap)
 
-**Status:** Known OMP limitation — not a config issue, requires an OMP source patch.
-
-The Hindsight API supports a rich `include` parameter on reflect requests:
-- `include: { facts: {} }` → response includes `based_on.memories[]`, `based_on.mental_models[]`, `based_on.directives[]` — the source memories that grounded the synthesis
-- `include: { tool_calls: {} }` → full reflect execution trace
-
-This is confirmed live against the personal Hindsight instance (`http://homelab-host:8888`) and the work instance.
-
-**The gap:** OMP's `memory-reflect.ts` only reads `response.text`. It never sends `include: { facts: {} }` and never consumes `based_on`. As a result, OMP reflect responses are ungrounded — the agent cannot see which memories backed the synthesis, cannot cite sources, and cannot detect when a reflect response is poorly grounded.
-
-**Fix:** A 4-file patch to OMP source (details in Work Settings note § Hindsight Reflect Grounding). The patch needs to go through the internal CI pipeline. Once merged, a new setting `hindsight.reflectIncludeFacts: true` would surface grounding references in reflect output. Both configs benefit from this change — the gap exists identically in WORK and PERSONAL.
-
-**No workaround available in config.** This limitation cannot be mitigated by any config.yml or .env change.
+See OMP Hindsight Reflect Grounding Patch for the unimplemented 4-file patch to expose Hindsight `include_facts` / `based_on` grounding in OMP reflect calls.
 
 ---
 
@@ -1324,34 +1345,4 @@ Environment variables beyond the core reference table above:
 
 ---
 
-### Summary of Differences
 
-Settings that differ between personal and work. Everything not listed is identical on both machines.
-
-#### config.yml
-
-| Setting | Personal | Work | Reason |
-|---------|------|------|--------|
-| `collab.relayUrl` | not set | `wss://collab.example.com` | No Acme Corp k8s relay at home |
-| `collab.webUrl` | not set | `https://collab.example.com` | Same |
-| `collab.displayName` | not set (inherits OS username) | `Work User` | Low priority — set for consistency |
-| `hindsight.bankMission` | `"Personal AI assistant memory for the user. Home-lab infrastructure, personal coding, learning, and life administration."` | `"Engineering memory for the user at Acme Corp…"` | Different scope |
-| `hindsight.retainContext` | Personal framing (home-lab + personal life) | Acme Corp work framing | Different scope |
-
-#### .env
-
-| Variable                      | Personal                   | Work                                           | Reason                           |
-| ----------------------------- | --------------------------- | ---------------------------------------------- | -------------------------------- |
-| `HINDSIGHT_API_URL`           | `http://homelab-host:8888` | Acme Corp cloud URL                             | Self-hosted vs cloud             |
-| `HINDSIGHT_API_TOKEN`         | personal token                 | work token                                     | Per-user                         |
-| `HINDSIGHT_BANK_ID`           | `personal-bank`              | `work-bank`                                      | Different memory namespaces      |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Not in use — commented out | Not in use — commented out                     | Neither machine has OTEL enabled |
-| `OTEL_SERVICE_NAME`           | Not in use — commented out | Not in use — commented out                     | Same                             |
-| `OPENROUTER_API_KEY`          | personal key                | work key                                       | Per-user — same mechanism, different key value |
-
-#### models.yml
-
-|                       | Personal                                                     | Work                 |
-| --------------------- | ------------------------------------------------------------ | -------------------- |
-| `openrouter`          | identical gateway config (matches work)                     | identical gateway config (canonical) |
-| `litellm`             | `http://homelab-host:4000` (self-hosted proxy) `[PERSONAL]` | not present          |
